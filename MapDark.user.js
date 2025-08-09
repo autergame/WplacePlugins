@@ -13,7 +13,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const themesUrlMap = {
+const themesMap = {
     liberty: {
         url: "https://maps.wplace.live/styles/liberty",
         iconColor: "#000000",
@@ -42,9 +42,9 @@ const originalThemeUrlRe = /^https:\/\/maps\.wplace\.live\/styles\/\w+$/;
 
     const storedMapTheme = localStorage.getItem("MapTheme");
 
-    const mapTheme = storedMapTheme in themesUrlMap ? storedMapTheme : defaultTheme
+    const mapTheme = storedMapTheme in themesMap ? storedMapTheme : defaultTheme
 
-    const selectedTheme = themesUrlMap[mapTheme]
+    const selectedTheme = themesMap[mapTheme]
 
     const originalFetch = unsafeWindow.fetch;
     unsafeWindow.fetch = async (configArg, ...restArg) => {
@@ -66,7 +66,7 @@ const originalThemeUrlRe = /^https:\/\/maps\.wplace\.live\/styles\/\w+$/;
         if (selector) {
             observer.disconnect();
 
-            let menuItemsHTML = Object.entries(themesUrlMap).map(([id, theme]) => {
+            let menuItemsHTML = Object.entries(themesMap).map(([id, theme]) => {
                 const activeClass = mapTheme === id ? 'active' : '';
                 return `<li><a class="${activeClass}" data-theme="${id}" onclick="window.changeMapTheme(event);">${theme.name}</a></li>`;
             }).join('');
