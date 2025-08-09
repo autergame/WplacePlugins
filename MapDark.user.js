@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Map Dark
 // @namespace    https://github.com/autergame/
-// @version      1.0.1
+// @version      2.0.0
 // @description  Modify wplace.live map with theme selection
 // @author       Auter
 // @license      MIT
-// @match        *://wplace.live/*
+// @match        *://*.wplace.live/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=wplace.live
 // @homepageURL  https://github.com/autergame/WplacePlugins
 // @updateURL    https://raw.githubusercontent.com/autergame/WplacePlugins/main/MapDark.user.js
@@ -14,92 +14,124 @@
 // ==/UserScript==
 
 (async function() {
-    'use strict';
+    "use strict";
 
     let mapTheme = localStorage.getItem("MapTheme");
-    if (mapTheme === null) {
-        mapTheme = 'liberty';
+    if (!["liberty-wplace", "bright-wplace", "bright-maptiler", "dark-black-maptiler", "dark-blue-maptiler", "satellite-maptiler"].includes(mapTheme)) {
+        mapTheme = "liberty-wplace";
     }
 
-    const originalFetch = unsafeWindow.fetch;
-    unsafeWindow.fetch = async (...arg) => {
-        if (arg[0]?.url === "https://tiles.openfreemap.org/styles/liberty") {
-            let url;
-            switch (mapTheme) {
-                case "liberty":
-                    url = "https://tiles.openfreemap.org/styles/liberty";
-                    break;
-                case "dark":
-                    url = "https://tiles.openfreemap.org/styles/dark";
-                    break;
-                case "fiord":
-                    url = "https://tiles.openfreemap.org/styles/fiord";
-                    break;
-                case "positron":
-                    url = "https://tiles.openfreemap.org/styles/positron";
-                    break;
-                case "bright":
-                    url = "https://tiles.openfreemap.org/styles/bright";
-                    break;
-                default:
-                    url = arg[0]?.url;
-                    break;
-            }
-            return originalFetch(url);
+    let mapKey = localStorage.getItem("MapKey");
+    if (!mapKey) {
+        mapKey = window.prompt("Map Dark by Auter\nPor favor forneça a chave de API do maptiler.com\nPlease provide maptiler.com API key");
+        if (mapKey) {
+            localStorage.setItem("MapKey", mapKey);
         } else {
-            return originalFetch(...arg);
+            const useDefaultKey = window.confirm("Map Dark by Auter\nDeseja usar a chave de API padrão?\nDo you want to use the default API key?");
+            if (useDefaultKey) {
+                localStorage.setItem("MapKey", "2PNMJQXawA9SeEOVz6xF");
+            } else {
+                window.location.href = "https://cloud.maptiler.com/account/keys/";
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
         }
-    };
-
-    unsafeWindow.changeMapTheme = function(event) {
-        const theme = event.target.getAttribute('data-theme');
-        localStorage.setItem("MapTheme", theme);
         window.location.reload();
     }
 
-    const observer = new MutationObserver((changes, observer) => {
-        const selector = document.querySelector("div.flex.flex-col.items-center.gap-3");
-        if (selector) {
-            observer.disconnect();
+    if (mapKey) {
+        const windowFetch = window.fetch;
+        const unsafeWindowFetch = unsafeWindow.fetch;
 
-            let svgFill = "#000000";
-            let btnBackgroundColor = null;
-            switch (mapTheme) {
-                case "bright":
-                case "liberty":
-                    svgFill = "#000000";
-                    btnBackgroundColor = "#ffffff";
-                    break;
-                case "dark":
-                    svgFill = "#ffffff";
-                    btnBackgroundColor = "#000000";
-                    break;
-                case "positron":
-                    svgFill = "#000000";
-                    btnBackgroundColor = "#c3c8ca";
-                    break;
-                case "fiord":
-                    svgFill = "#ffffff";
-                    btnBackgroundColor = "#000055";
-                    break;
+        unsafeWindow.fetch = async function(...args) {
+            if (args[0]?.url && args[0]?.url === "https://maps.wplace.live/styles/liberty") {
+                let url;
+                switch (mapTheme) {
+                    case "dark-black-maptiler":
+                        url = "https://api.maptiler.com/maps/backdrop-dark/style.json?key=" + mapKey;
+                        break;
+                    case "dark-blue-maptiler":
+                        url = "https://api.maptiler.com/maps/streets-v2-dark/style.json?key=" + mapKey;
+                        break;
+                    case "satellite-maptiler":
+                        url = "https://api.maptiler.com/maps/hybrid/style.json?key=" + mapKey;
+                        break;
+                    case "bright-maptiler":
+                        url = "https://api.maptiler.com/maps/bright-v2/style.json?key=" + mapKey;
+                        break;
+                    case "bright-wplace":
+                        url = "https://maps.wplace.live/styles/bright";
+                        break;
+                    case "liberty-wplace":
+                    default:
+                        // url = args[0]?.url;
+                        url = "https://maps.wplace.live/styles/liberty";
+                        break;
+                }
+                return unsafeWindowFetch(url);
+            } else if (args[0]?.url && args[0]?.url.includes("api.maptiler.com")) {
+                return windowFetch(...args);
+            } else {
+                return unsafeWindowFetch(...args);
             }
+        };
 
-            const builtInThemes = [
-                { id: 'dark', name: 'Dark' },
-                { id: 'fiord', name: 'Fiord' },
-                { id: 'liberty', name: 'Liberty' },
-                { id: 'bright', name: 'Bright' },
-                { id: 'positron', name: 'Positron' }
-            ];
+        unsafeWindow.changeMapTheme = function(event) {
+            const theme = event.target.getAttribute("data-theme");
+            localStorage.setItem("MapTheme", theme);
+            window.location.reload();
+        }
 
-            let menuItemsHTML = builtInThemes.map(theme => {
-                const activeClass = mapTheme === theme.id ? 'active' : '';
-                return `<li><a class="${activeClass}" data-theme="${theme.id}" onclick="window.changeMapTheme(event);">${theme.name}</a></li>`;
-            }).join('');
+        const observer = new MutationObserver((changes, observer) => {
+            const selector = document.querySelector("div.flex.flex-col.items-center.gap-3");
+            if (selector) {
+                observer.disconnect();
 
-            const element = document.createElement("div");
-            selector.appendChild(element);
-            element.outerHTML = `
+                let svgFill = "#000000";
+                let btnBackgroundColor = null;
+                switch (mapTheme) {
+                    case "liberty-wplace":
+                        svgFill = "#000000";
+                        btnBackgroundColor = "#ffffff";
+                        break;
+                    case "bright-wplace":
+                        svgFill = "#000000";
+                        btnBackgroundColor = "#cccccc";
+                        break;
+                    case "bright-maptiler":
+                        svgFill = "#000000";
+                        btnBackgroundColor = "#555555";
+                        break;
+                    case "dark-black-maptiler":
+                        svgFill = "#ffffff";
+                        btnBackgroundColor = "#000000";
+                        break;
+                    case "dark-blue-maptiler":
+                        svgFill = "#ffffff";
+                        btnBackgroundColor = "#000055";
+                        break;
+                    case "satellite-maptiler":
+                        svgFill = "#000000";
+                        btnBackgroundColor = "#0a7346";
+                        break;
+                }
+
+                const builtInThemes = [
+                    { id: 'liberty-wplace', name: 'Liberty Wplace' },
+                    { id: 'bright-wplace', name: 'Bright Wplace' },
+                    { id: 'bright-maptiler', name: 'Bright Maptiler' },
+                    { id: "dark-black-maptiler", name: "Dark Black Maptiler" },
+                    { id: "dark-blue-maptiler", name: "Dark Blue Maptiler" },
+                    { id: "satellite-maptiler", name: "Satellite Maptiler" },
+                ];
+
+                let menuItemsHTML = builtInThemes.map(theme => {
+                    const activeClass = mapTheme === theme.id ? "active" : "";
+                    return `<li><a class="${activeClass}" data-theme="${theme.id}" onclick="window.changeMapTheme(event);">${theme.name}</a></li>`;
+                }).join("");
+
+                const element = document.createElement("div");
+                selector.appendChild(element);
+                element.outerHTML = `
         <div class="dropdown dropdown-end">
             <button id="map-theme-btn" class="btn btn-square relative shadow-md" tabindex="0" title="Map Theme" style="background-color: ${btnBackgroundColor}">
                 <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="${svgFill}">
@@ -111,7 +143,8 @@
             </ul>
         </div>
         `;
-        }
-    });
-    observer.observe(document, {childList: true, subtree: true});
+            }
+        });
+        observer.observe(document, {childList: true, subtree: true});
+    }
 })();
