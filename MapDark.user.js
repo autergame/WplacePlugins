@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Map Dark
 // @namespace    https://github.com/autergame/
-// @version      1.0.1
+// @version      1.0.2
 // @description  Modify wplace.live map with theme selection
 // @author       Auter
 // @license      MIT
