@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Map Dark
 // @namespace    https://github.com/autergame/
-// @version      2.0.0
+// @version      2.1.0
 // @description  Modify wplace.live map with theme selection
 // @author       Auter
 // @license      MIT
@@ -23,13 +23,14 @@
 
     let mapKey = localStorage.getItem("MapKey");
     if (!mapKey) {
-        mapKey = window.prompt("Map Dark by Auter\nPor favor forneça a chave de API do maptiler.com\nPlease provide maptiler.com API key");
+        mapKey = window.prompt("Map Dark by Auter\nPor favor forneça a chave de API do maptiler.com, é grátis\nPlease provide maptiler.com API key its free");
         if (mapKey) {
             localStorage.setItem("MapKey", mapKey);
         } else {
             const useDefaultKey = window.confirm("Map Dark by Auter\nDeseja usar a chave de API padrão?\nDo you want to use the default API key?");
             if (useDefaultKey) {
-                localStorage.setItem("MapKey", "2PNMJQXawA9SeEOVz6xF");
+                const keys = ["2PNMJQXawA9SeEOVz6xF", "NoiqJ3rVMUuTXIW6xGJN", "RVv9BDpBq2DgLoRCO8lA"];
+                localStorage.setItem("MapKey", keys[Math.floor(Math.random() * keys.length)]);
             } else {
                 window.location.href = "https://cloud.maptiler.com/account/keys/";
                 await new Promise(resolve => setTimeout(resolve, 5000));
