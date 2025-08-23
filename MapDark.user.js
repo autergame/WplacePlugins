@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Map Dark
 // @namespace    https://github.com/autergame/
-// @version      2.3.0
+// @version      2.4.0
 // @description  Modify wplace.live map with theme selection
 // @author       Auter
 // @license      MIT
@@ -75,6 +75,23 @@ const themesMap = {
 const defaultTheme = "liberty_wplace";
 const originalThemeUrl = "https://maps.wplace.live/styles/liberty";
 
+function waitForElement(selector) {
+    return new Promise(resolve => {
+        const observer = new MutationObserver(mutations => {
+            const element = document.querySelector(selector);
+            if (element) {
+                observer.disconnect();
+                resolve(element);
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    });
+}
+
 (async function () {
 	"use strict";
 
@@ -94,6 +111,7 @@ const originalThemeUrl = "https://maps.wplace.live/styles/liberty";
 				localStorage.setItem("MapKey", keys[Math.floor(Math.random() * keys.length)]);
 			} else {
 				localStorage.setItem("MapKey", "nope");
+                localStorage.setItem("MapTheme", defaultTheme);
 			}
 		}
 		await new Promise(resolve => setTimeout(resolve, 1000));
@@ -105,8 +123,19 @@ const originalThemeUrl = "https://maps.wplace.live/styles/liberty";
 
 	unsafeWindow.fetch = async function (configArg, ...restArg) {
 		if (configArg?.url && configArg?.url === originalThemeUrl) {
-			const url = selectedTheme.mapTiler ? selectedTheme.url + mapKey : selectedTheme.url;
-			return unsafeWindowFetch(url);
+            if (selectedTheme.mapTiler) {
+                const url = selectedTheme.url + mapKey;
+                const response = await unsafeWindowFetch(url);
+                if (response.ok) {
+                    return response;
+                } else {
+                    window.alert("Map Dark by Auter\nAlgo de errado aconteceu com o Maptiler, desativando\nSomething wrong happened with Maptiler, disabling");
+                    localStorage.removeItem("MapKey");
+                    window.location.reload();
+                }
+            } else {
+                return unsafeWindowFetch(selectedTheme.url);
+            }
 		} else if (configArg?.url && configArg?.url.includes("api.maptiler.com")) {
 			return windowFetch(configArg, ...restArg);
 		} else {
@@ -120,20 +149,31 @@ const originalThemeUrl = "https://maps.wplace.live/styles/liberty";
 		window.location.reload();
 	}
 
-	const observer = new MutationObserver((changes, observer) => {
-		const selector = document.querySelector("div.flex.flex-col.items-center.gap-3");
-		if (selector) {
-			observer.disconnect();
+    unsafeWindow.resetMapTilerKey = function () {
+        localStorage.removeItem("MapKey");
+		window.location.reload();
+    }
 
-			const menuItemsHTML = Object.entries(themesMap).map(([id, theme]) => {
-				if (theme.mapTiler && !mapKey) return "";
-				const activeClass = mapTheme === id ? "active" : "";
-				return `<li><a class="${activeClass}" data-theme="${id}" onclick="window.changeMapTheme(event);">${theme.name}</a></li>`;
-			}).join("");
+	const observer = new MutationObserver((mutations, observer) => {
+        for (const mutation of mutations) {
+            if (mutation.target.className !== "flex flex-col gap-4 items-center") {
+                return;
+            }
+            const selector = mutation.target.querySelector("div.flex.flex-col.items-center.gap-3");
+            if (selector.querySelector("#map-theme-btn")) {
+                return;
+            }
 
-			const element = document.createElement("div");
-			selector.appendChild(element);
-			element.outerHTML = `
+            let menuItemsHTML = Object.entries(themesMap).map(([id, theme]) => {
+                if (theme.mapTiler && mapKey === "nope") return "";
+                const activeClass = mapTheme === id ? "active" : "";
+                return `<li><a class="${activeClass}" data-theme="${id}" onclick="window.changeMapTheme(event);">${theme.name}</a></li>`;
+            }).join("");
+            menuItemsHTML += `<li><a onclick="window.resetMapTilerKey();">Reset Maptiler Key</a></li>`
+
+            const element = document.createElement("div");
+            selector.appendChild(element);
+            element.outerHTML = `
         <div class="dropdown dropdown-end">
             <button id="map-theme-btn" class="btn btn-square relative shadow-md" tabindex="0" title="Map Theme" style="background-color: ${selectedTheme.buttonBackground}">
                 <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="${selectedTheme.iconColor}">
@@ -147,7 +187,8 @@ const originalThemeUrl = "https://maps.wplace.live/styles/liberty";
         `;
 
             document.querySelector("#map canvas").style.backgroundColor = "black"
-		}
+        }
 	});
-	observer.observe(document, { childList: true, subtree: true });
+    const leftButtons = await waitForElement("body div.absolute.right-2.top-2.z-30");
+	observer.observe(leftButtons, { childList: true, subtree: true });
 })();
