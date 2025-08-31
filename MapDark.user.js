@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Map Dark
 // @namespace    https://github.com/autergame/
-// @version      3.0.0
+// @version      3.1.0
 // @description  Modify wplace.live map with theme selection
 // @author       Auter
 // @license      MIT
@@ -63,16 +63,16 @@ const themesMap = {
         name: "Dark Blue Maptiler",
         mapTiler: true,
     },
-//     satellite_maptiler: {
-//         url: "https://api.maptiler.com/maps/hybrid/style.json?key=",
-//         iconColor: "#000000",
-//         buttonBackground: "#0a7346",
-//         name: "Satellite Maptiler",
-//         mapTiler: true,
-//     },
+    //     satellite_maptiler: {
+    //         url: "https://api.maptiler.com/maps/hybrid/style.json?key=",
+    //         iconColor: "#000000",
+    //         buttonBackground: "#0a7346",
+    //         name: "Satellite Maptiler",
+    //         mapTiler: true,
+    //     },
 };
 
-const defaultTheme = "liberty_wplace";
+const defaultTheme = "dark_black_wplace";
 const originalThemeUrl = "https://maps.wplace.live/styles/liberty";
 
 function waitForElement(selector) {
@@ -102,18 +102,26 @@ function waitForElement(selector) {
     let mapKey = localStorage.getItem("MapKey");
     if (!mapKey) {
         mapKey = window.prompt("Map Dark by Auter\nDeseja fornecer a chave de API do maptiler.com?\nÉ grátis, cancele se não quiser\nDo you want to provide the maptiler.com API key?\nIt's free, cancel if you don't want it");
+
         if (mapKey) {
             localStorage.setItem("MapKey", mapKey);
         } else {
             const useDefaultKey = window.confirm("Map Dark by Auter\nDeseja usar a chave de API padrão?\nDo you want to use the default API key?");
+
             if (useDefaultKey) {
-                const keys = ["2PNMJQXawA9SeEOVz6xF", "NoiqJ3rVMUuTXIW6xGJN", "RVv9BDpBq2DgLoRCO8lA"];
-                localStorage.setItem("MapKey", keys[Math.floor(Math.random() * keys.length)]);
+                const keys = [
+                    "2PNMJQXawA9SeEOVz6xF",
+                    "NoiqJ3rVMUuTXIW6xGJN",
+                    "RVv9BDpBq2DgLoRCO8lA"
+                ];
+                const key = keys[Math.floor(Math.random() * keys.length)];
+                localStorage.setItem("MapKey", key);
             } else {
                 localStorage.setItem("MapKey", "nope");
                 localStorage.setItem("MapTheme", defaultTheme);
             }
         }
+
         await new Promise(resolve => setTimeout(resolve, 1000));
         window.location.reload();
     }
@@ -236,63 +244,66 @@ function waitForElement(selector) {
                 }
                 const activeClass = mapTheme === id ? "active" : "";
                 return `
-					<li>
-						<a class="${activeClass}" data-theme="${id}" onclick="window.changeMapTheme(event);">${theme.name}</a>
-					</li>
-				`;
+                    <li>
+                        <a class="${activeClass}" data-theme="${id}" onclick="window.changeMapTheme(event);">${theme.name}</a>
+                    </li>
+                `;
             }).join("");
 
             menuItemsHTML += `
-				<div class="flex items-center justify-between" style="padding-block: .375rem; padding-inline: .75rem;">
-					<span>No Label / Text</span><div class="flex items-center gap-2">
-						<div class="tooltip">
-							<input id="no_label" type="checkbox" ${customNoLabel ? "checked" : ""} class="btn btn-sm btn-circle" onchange="window.changeNoLabel(event);">
-						</div>
-					</div>
-				</div>
-			`;
+                <div class="flex items-center justify-between" style="padding-block: .375rem; padding-inline: .75rem;">
+                    <span>No Label / Text</span><div class="flex items-center gap-2">
+                        <div class="tooltip">
+                            <input id="no_label" type="checkbox" ${customNoLabel ? "checked" : ""} class="btn btn-sm btn-circle" onchange="window.changeNoLabel(event);">
+                        </div>
+                    </div>
+                </div>
+            `;
             menuItemsHTML += `
-				<div class="flex items-center justify-between" style="padding-block: .375rem; padding-inline: .75rem;">
-					<span>Backgroud Color</span><div class="flex items-center gap-2">
-						<div class="tooltip">
-							<input id="backgroud_color" type="color" value="${customColor.background || '#000000'}" class="btn btn-sm btn-circle" onchange="window.changeColor('Background', event);">
-						</div>
-					</div>
-				</div>
-			`;
+                <div class="flex items-center justify-between" style="padding-block: .375rem; padding-inline: .75rem;">
+                    <span>Backgroud Color</span><div class="flex items-center gap-2">
+                        <div class="tooltip">
+                            <input id="backgroud_color" type="color" value="${customColor.background || '#000000'}" class="btn btn-sm btn-circle" onchange="window.changeColor('Background', event);">
+                        </div>
+                    </div>
+                </div>
+            `;
             menuItemsHTML += `
-				<div class="flex items-center justify-between" style="padding-block: .375rem; padding-inline: .75rem;">
-					<span>Water Color</span><div class="flex items-center gap-2">
-						<div class="tooltip">
-							<input id="water_color" type="color" value="${customColor.water || '#000000'}" class="btn btn-sm btn-circle" onchange="window.changeColor('Water', event);">
-						</div>
-					</div>
-				</div>
-			`;
+                <div class="flex items-center justify-between" style="padding-block: .375rem; padding-inline: .75rem;">
+                    <span>Water Color</span><div class="flex items-center gap-2">
+                        <div class="tooltip">
+                            <input id="water_color" type="color" value="${customColor.water || '#000000'}" class="btn btn-sm btn-circle" onchange="window.changeColor('Water', event);">
+                        </div>
+                    </div>
+                </div>
+            `;
             menuItemsHTML += `
-				<li>
-					<a onclick="window.resetPlugin();">Reset Plugin Settings</a>
-				</li>
-			`;
+                <li>
+                    <a onclick="window.resetPlugin();">Reset Plugin Settings</a>
+                </li>
+            `;
 
             const element = document.createElement("div");
             selector.appendChild(element);
             element.outerHTML = `
-				<div class="dropdown dropdown-end">
-					<button id="map-theme-btn" class="btn btn-square relative shadow-md" tabindex="0" title="Map Theme" style="background-color: ${selectedTheme.buttonBackground}">
-						<svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="${selectedTheme.iconColor}">
-							<path d="M12 11.807A9.002 9.002 0 0 1 10.049 2a9.942 9.942 0 0 0-5.12 2.735c-3.905 3.905-3.905 10.237 0 14.142 3.906 3.906 10.237 3.905 14.143 0a9.946 9.946 0 0 0 2.735-5.119A9.003 9.003 0 0 1 12 11.807z"/>
-						</svg>
-					</button>
-					<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-						${menuItemsHTML}
-					</ul>
-				</div>
-			`;
+                <div class="dropdown dropdown-end">
+                    <button id="map-theme-btn" class="btn btn-square relative shadow-md" tabindex="0" title="Map Theme" style="background-color: ${selectedTheme.buttonBackground}">
+                        <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="${selectedTheme.iconColor}">
+                            <path d="M12 11.807A9.002 9.002 0 0 1 10.049 2a9.942 9.942 0 0 0-5.12 2.735c-3.905 3.905-3.905 10.237 0 14.142 3.906 3.906 10.237 3.905 14.143 0a9.946 9.946 0 0 0 2.735-5.119A9.003 9.003 0 0 1 12 11.807z"/>
+                        </svg>
+                    </button>
+                    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                        ${menuItemsHTML}
+                    </ul>
+                </div>
+            `;
 
-            document.querySelector("#map canvas").style.backgroundColor = "black"
+            document.querySelector("html").style.backgroundColor = "black";
+            document.querySelector("body").style.backgroundColor = "black";
+            document.querySelector("#map canvas").style.backgroundColor = "black";
         }
     });
+
     const leftButtons = await waitForElement("body div.absolute.right-2.top-2.z-30");
     observer.observe(leftButtons, {
         childList: true,
